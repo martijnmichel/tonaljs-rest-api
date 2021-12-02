@@ -28,7 +28,7 @@ function generateGuitarChord(c, variant) {
     console.log(`NO VOICINGS FOUND FOR: ${name}`);
   }
 
-  const fname = c.tonic + ' ' + chordName(name);
+  //const fname = c.tonic + ' ' + chordName(name);
 
   const title = c.tonic + c.aliases[0];
 
