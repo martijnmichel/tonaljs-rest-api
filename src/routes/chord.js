@@ -1,25 +1,42 @@
-import { Router } from "express";
-import _ from "lodash";
-import { Chord } from "@tonaljs/modules";
+import { Router } from 'express';
+import _ from 'lodash';
+import { Chord } from '@tonaljs/modules';
+import { generateGuitarChord } from '../scripts/generateChord';
+import { ChordType } from '@tonaljs/tonal';
 
 const router = Router();
 
-router.get("/", (req, res) => {
+router.get('/', (req, res) => {
   return res.send(Object.values(req.context.models.chords));
 });
 
-router.get("/:root/:chordAlias", (req, res) => {
-  return res.send(Chord.chord(`${req.params.root}${req.params.chordAlias}`));
+router.get('/:root/:chordAlias', (req, res) => {
+  return res.send(
+    Chord.chord(`${req.params.root}${req.params.chordAlias}`),
+  );
 });
 
-router.get("/:chordAlias", (req, res) => {
-  let chord = _.find(req.context.models.chords, c =>
-    c.aliases.includes(req.params.chordAlias)
+router.get('/:root/:chroma/png', async (req, res) => {
+  const { variant } = req.query;
+
+  const chord = ChordType.all().find(
+    (c) => c.chroma === req.params.chroma,
+  );
+
+  const c = Chord.getChord(chord.aliases[0], req.params.root);
+  console.log(c);
+  const data = await generateGuitarChord(c, variant);
+  return res.set('Content-Type', 'image/png').send(data);
+});
+
+router.get('/:chordAlias', (req, res) => {
+  let chord = _.find(req.context.models.chords, (c) =>
+    c.aliases.includes(req.params.chordAlias),
   );
   if (chord) return res.send(chord);
   else
     return res.send({
-      empty: true
+      empty: true,
     });
 });
 export default router;

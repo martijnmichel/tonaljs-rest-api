@@ -1,9 +1,9 @@
-import { ChordDictionary, ScaleDictionary } from "@tonaljs/modules";
+import { ChordType, ScaleType } from '@tonaljs/tonal';
 
-let chords = ChordDictionary.entries();
-let scales = ScaleDictionary.entries();
+let chords = ChordType.all();
+let scales = ScaleType.all();
 
 export default {
   chords,
-  scales
+  scales,
 };
