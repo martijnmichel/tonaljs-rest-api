@@ -19,6 +19,7 @@
     "@martijnmichel/chordshape": "./chordshape-0.0.28-npm.tgz",
     "@tonaljs/modules": "3.4.5",
     "@tonaljs/tonal": "^4.6.5",
+    "@vercel/node": "^1.12.1",
     "body-parser": "^1.18.3",
     "cors": "^2.8.5",
     "dotenv": "^6.2.0",
