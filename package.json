@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@martijnmichel/chordshape": "./chordshape-0.0.28-npm.tgz",
+    "@svgdotjs/svg.js": "^3.1.1",
     "@tonaljs/modules": "3.4.5",
     "@tonaljs/tonal": "^4.6.5",
     "@vercel/node": "^1.12.1",
