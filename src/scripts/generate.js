@@ -1,26 +1,32 @@
 const strings = [
   {
     name: 'E2_string',
+    note: 'E2',
     index: 6,
   },
   {
     name: 'A2_string',
+    note: 'a2',
     index: 5,
   },
   {
     name: 'D3_string',
+    note: 'd3',
     index: 4,
   },
   {
     name: 'G3_string',
+    note: 'g3',
     index: 3,
   },
   {
     name: 'B3_string',
+    note: 'b3',
     index: 2,
   },
   {
     name: 'E4_string',
+    note: 'E4',
     index: 1,
   },
 ];
@@ -39,6 +45,7 @@ function generate(c, variant) {
     distance,
     Interval,
     ScaleType,
+    Note,
   } = require('@tonaljs/tonal');
   const { each, orderBy, find } = require('lodash');
   const sharp = require('sharp');
@@ -151,12 +158,22 @@ function generate(c, variant) {
   }
 
   function addNotes() {
-    voicing.forEach((item) => {
+    voicing.forEach((item, index) => {
       if (item[1] === 'x') return false;
       const string = find(strings, (s) => s.index === item[0]);
       const stringEl = document.getElementById(string.name);
       const x = stringEl.getAttribute('x');
       const width = stringEl.getAttribute('width');
+      const translatedItem = translated.translated[index];
+      const fretActive = parseInt(item[1]);
+
+      console.log(translatedItem);
+
+      const transposed = Note.transpose(
+        string.note,
+        Interval.fromSemitones(fretActive),
+      );
+      const note = Note.get(transposed);
 
       const circle = document.createElementNS(
         'http://www.w3.org/2000/svg',
@@ -168,10 +185,21 @@ function generate(c, variant) {
       circle.setAttribute('cy', calcFretPosition(parseInt(item[1])));
       circle.setAttribute('cx', parseInt(x) + parseInt(width / 2));
 
+      const text = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'text',
+      );
+      text.textContent = note.pc;
+
+      text.setAttribute('y', calcFretPosition(parseInt(item[1])) + 6);
+      text.setAttribute('x', parseInt(x) + parseInt(width / 2));
+      text.setAttribute('text-anchor', 'middle');
+
       circle.style.filter =
         'drop-shadow( 0px 0px 10px rgba(0, 0, 0, .7))';
 
       svg.appendChild(circle);
+      svg.appendChild(text);
     });
   }
 
