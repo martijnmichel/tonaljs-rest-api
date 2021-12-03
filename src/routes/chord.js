@@ -65,7 +65,7 @@ router.get('/:root/:chroma/interactive', async (req, res) => {
 });
 
 router.get('/:root/:chroma/png', async (req, res) => {
-  const { variant } = req.query;
+  const { variant, width } = req.query;
 
   const chord = ChordType.all().find(
     (c) => c.chroma === req.params.chroma,
@@ -76,6 +76,7 @@ router.get('/:root/:chroma/png', async (req, res) => {
   const data = generate(c, variant);
 
   const imageData = await sharp(Buffer.from(data))
+    .resize(parseInt(width) || 246)
     .png()
     .toBuffer()
     .then((re) => re);
