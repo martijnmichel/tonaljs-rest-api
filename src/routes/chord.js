@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import _ from 'lodash';
-import { Chord } from '@tonaljs/modules';
 import { generateGuitarChord } from '../scripts/generateChord';
-import { ChordType } from '@tonaljs/tonal';
+import { ChordType, Chord } from '@tonaljs/tonal';
 import { getVoicingsFromChord } from '@martijnmichel/chordshape';
 import { generate } from '../scripts/generate';
 import sharp from 'sharp';
@@ -14,9 +13,20 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:root/:chordAlias', (req, res) => {
-  return res.send(
-    Chord.chord(`${req.params.root}${req.params.chordAlias}`),
+  const chord = Chord.getChord(
+    req.params.chordAlias,
+    req.params.root,
   );
+
+  const host = `${req.protocol}://${req.get('host')}/chord`;
+
+  return res.send({
+    ...chord,
+    url: {
+      variants: `${host}/${req.params.root}/${chord.chroma}/variants`,
+      interactive: `${host}/${req.params.root}/${chord.chroma}/interactive?variant=0`,
+    },
+  });
 });
 
 router.get('/:root/:chroma/variants', async (req, res) => {
@@ -24,14 +34,20 @@ router.get('/:root/:chroma/variants', async (req, res) => {
     (c) => c.chroma === req.params.chroma,
   );
 
+  const host = `${req.protocol}://${req.get('host')}/chord`;
+
   const data = getVoicingsFromChord(chord.aliases[0]);
-  return res.send(data);
-});
-
-router.get('/test', (req, res) => {
-  const c = Chord.getChord('M', 'D');
-
-  res.send(generate(c, 0));
+  return res.send(
+    data.map((v, i) => {
+      return {
+        ...v,
+        url: {
+          png: `${host}/${req.params.root}/${chord.chroma}/png?variant=${i}`,
+          interactive: `${host}/${req.params.root}/${chord.chroma}/interactive?variant=${i}`,
+        },
+      };
+    }),
+  );
 });
 
 router.get('/:root/:chroma/interactive', async (req, res) => {
@@ -56,7 +72,7 @@ router.get('/:root/:chroma/png', async (req, res) => {
   );
 
   const c = Chord.getChord(chord.aliases[0], req.params.root);
-  console.log(c);
+
   const data = generate(c, variant);
 
   const imageData = await sharp(Buffer.from(data))

@@ -48,6 +48,8 @@ function generateGuitarChord(c, variant) {
 
   const svg = box.getSVG();
 
+  console.log(svg);
+
   return sharp(Buffer.from(svg))
     .png()
     .toBuffer()
