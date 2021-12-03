@@ -4,6 +4,8 @@ import { Chord } from '@tonaljs/modules';
 import { generateGuitarChord } from '../scripts/generateChord';
 import { ChordType } from '@tonaljs/tonal';
 import { getVoicingsFromChord } from '@martijnmichel/chordshape';
+import { generate } from '../scripts/generate';
+import sharp from 'sharp';
 
 const router = Router();
 
@@ -26,6 +28,26 @@ router.get('/:root/:chroma/variants', async (req, res) => {
   return res.send(data);
 });
 
+router.get('/test', (req, res) => {
+  const c = Chord.getChord('M', 'D');
+
+  res.send(generate(c, 0));
+});
+
+router.get('/:root/:chroma/interactive', async (req, res) => {
+  const { variant } = req.query;
+
+  const chord = ChordType.all().find(
+    (c) => c.chroma === req.params.chroma,
+  );
+
+  const c = Chord.getChord(chord.aliases[0], req.params.root);
+
+  const data = generate(c, variant);
+
+  return res.set('Content-Type', 'text/html').send(data);
+});
+
 router.get('/:root/:chroma/png', async (req, res) => {
   const { variant } = req.query;
 
@@ -35,8 +57,14 @@ router.get('/:root/:chroma/png', async (req, res) => {
 
   const c = Chord.getChord(chord.aliases[0], req.params.root);
   console.log(c);
-  const data = await generateGuitarChord(c, variant);
-  return res.set('Content-Type', 'image/png').send(data);
+  const data = generate(c, variant);
+
+  const imageData = await sharp(Buffer.from(data))
+    .png()
+    .toBuffer()
+    .then((re) => re);
+
+  return res.set('Content-Type', 'image/png').send(imageData);
 });
 
 router.get('/:chordAlias', (req, res) => {

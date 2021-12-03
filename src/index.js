@@ -25,10 +25,6 @@ app.use((req, res, next) => {
 
 // Routes
 
-app.use('/test', (req, res) => {
-  res.send(generate());
-});
-
 app.use('/chord', routes.chord);
 app.use('/scale', routes.scale);
 app.use('/interval', routes.interval);
