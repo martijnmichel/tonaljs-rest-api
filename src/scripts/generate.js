@@ -130,6 +130,7 @@ function generate(c, opts) {
   svg.style.fontFamily = 'Roboto';
   svg.style.fontWeight = '600';
   svg.style.letterSpacing = '-1px';
+  svg.style.fontSize = '14px';
 
   function isBarreChord() {
     return translated.translated.includes(0) ? false : true;
