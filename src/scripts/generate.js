@@ -31,7 +31,13 @@ const strings = [
   },
 ];
 
-function generate(c, variant) {
+const options = {
+  variant: 0,
+  harmFunc: false,
+};
+function generate(c, opts) {
+  Object.assign(options, opts);
+
   const jsdom = require('jsdom');
   const { JSDOM } = jsdom;
   const {
@@ -67,7 +73,7 @@ function generate(c, variant) {
 
   const title = c.tonic + c.aliases[0];
 
-  const translated = translate(voicings[variant], c.tonic);
+  const translated = translate(voicings[options.variant], c.tonic);
 
   const voicing = translated.shape
     .slice()
@@ -121,6 +127,9 @@ function generate(c, variant) {
 
   const svg = document.querySelector('svg');
   svg.setAttribute('style', 'border-radius: 12px');
+  svg.style.fontFamily = 'Roboto';
+  svg.style.fontWeight = '600';
+  svg.style.letterSpacing = '-1px';
 
   function isBarreChord() {
     return translated.translated.includes(0) ? false : true;
@@ -157,21 +166,38 @@ function generate(c, variant) {
     return offset + i * fretHeight + 15;
   }
 
+  function findNoteName(note) {
+    return c.notes.find(
+      (nn) => Note.get(nn).chroma === Note.get(note).chroma,
+    );
+  }
+
+  function findHarmFunc(note) {
+    const index = c.notes.findIndex(
+      (nn) => Note.get(nn).chroma === Note.get(note).chroma,
+    );
+
+    const interval = Interval.get(c.intervals[index]);
+
+    return interval.q + interval.num;
+  }
+
   function addNotes() {
+    const translatedFrets = translated.translated.reverse();
     voicing.forEach((item, index) => {
       if (item[1] === 'x') return false;
       const string = find(strings, (s) => s.index === item[0]);
       const stringEl = document.getElementById(string.name);
       const x = stringEl.getAttribute('x');
       const width = stringEl.getAttribute('width');
-      const translatedItem = translated.translated[index];
+      const translatedItem = translatedFrets[index];
       const fretActive = parseInt(item[1]);
 
-      console.log(translatedItem);
+      //console.log(translatedItem, index);
 
       const transposed = Note.transpose(
         string.note,
-        Interval.fromSemitones(fretActive),
+        Interval.fromSemitones(translatedItem),
       );
       const note = Note.get(transposed);
 
@@ -179,7 +205,7 @@ function generate(c, variant) {
         'http://www.w3.org/2000/svg',
         'circle',
       );
-      circle.setAttribute('r', 10);
+      circle.setAttribute('r', 12);
       circle.style.fill = 'chartreuse';
 
       circle.setAttribute('cy', calcFretPosition(parseInt(item[1])));
@@ -189,7 +215,10 @@ function generate(c, variant) {
         'http://www.w3.org/2000/svg',
         'text',
       );
-      text.textContent = note.pc;
+
+      text.textContent = !options.harmFunc
+        ? findNoteName(note.pc)
+        : findHarmFunc(note.pc);
 
       text.setAttribute('y', calcFretPosition(parseInt(item[1])) + 6);
       text.setAttribute('x', parseInt(x) + parseInt(width / 2));

@@ -51,7 +51,7 @@ router.get('/:root/:chroma/variants', async (req, res) => {
 });
 
 router.get('/:root/:chroma/interactive', async (req, res) => {
-  const { variant } = req.query;
+  const { variant, harmFunc } = req.query;
 
   const chord = ChordType.all().find(
     (c) => c.chroma === req.params.chroma,
@@ -59,13 +59,13 @@ router.get('/:root/:chroma/interactive', async (req, res) => {
 
   const c = Chord.getChord(chord.aliases[0], req.params.root);
 
-  const data = generate(c, variant);
+  const data = generate(c, { variant, harmFunc });
 
   return res.set('Content-Type', 'text/html').send(data);
 });
 
 router.get('/:root/:chroma/png', async (req, res) => {
-  const { variant, width } = req.query;
+  const { variant, width, harmFunc } = req.query;
 
   const chord = ChordType.all().find(
     (c) => c.chroma === req.params.chroma,
@@ -73,7 +73,7 @@ router.get('/:root/:chroma/png', async (req, res) => {
 
   const c = Chord.getChord(chord.aliases[0], req.params.root);
 
-  const data = generate(c, variant);
+  const data = generate(c, { variant, harmFunc });
 
   const imageData = await sharp(Buffer.from(data))
     .resize(parseInt(width) || 246)
