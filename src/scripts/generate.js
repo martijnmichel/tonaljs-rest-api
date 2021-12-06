@@ -112,7 +112,7 @@ function generate(c, opts) {
             <rect y="291.076" width="246.324" height="4.299" style="fill: rgb(216, 216, 216); fill-opacity: 0.3;"></rect>
             <rect width="246.324" height="15" style="fill: rgb(216, 216, 216);"></rect>
             <circle style="fill: rgb(216, 216, 216); fill-opacity: 0.21;" cx="125.496" cy="188.671" r="10.6"></circle>
-            <text style="fill: rgb(255, 255, 255); font-family: Roboto; font-size: 12px; text-anchor: middle; white-space: pre;" x="125.389" y="193.929" id="fret-number">10</text>
+            <text style="fill: rgb(255, 255, 255); font-size: 12px; text-anchor: middle; white-space: pre;" x="125.389" y="193.929" id="fret-number">10</text>
             <rect x="20.181" y="15" width="6.638" height="346.625" style="fill: url(#gradient-0-2);" id="E2_string"></rect>
             <rect x="61.273" y="15" width="5.566" height="346.625" style="fill: url(#gradient-0-1);" id="A2_string"></rect>
             <rect x="102.418" y="15" width="4.896" height="346.625" style="fill: url(#gradient-0-0); paint-order: fill;" id="D3_string"></rect>
