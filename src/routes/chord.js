@@ -61,6 +61,20 @@ router.get('/:root/:chroma/interactive', async (req, res) => {
 
   const data = generate(c, { variant, harmFunc });
 
+  return res.set('Content-Type', 'text/html').send(data);
+});
+
+router.get('/:root/:chroma/svg', async (req, res) => {
+  const { variant, harmFunc } = req.query;
+
+  const chord = ChordType.all().find(
+    (c) => c.chroma === req.params.chroma,
+  );
+
+  const c = Chord.getChord(chord.aliases[0], req.params.root);
+
+  const data = generate(c, { variant, harmFunc });
+
   return res.set('Content-Type', 'image/svg').send(data);
 });
 
