@@ -61,7 +61,7 @@ router.get('/:root/:chroma/interactive', async (req, res) => {
 
   const data = generate(c, { variant, harmFunc });
 
-  return res.set('Content-Type', 'text/html').send(data);
+  return res.set('Content-Type', 'image/svg').send(data);
 });
 
 router.get('/:root/:chroma/png', async (req, res) => {
