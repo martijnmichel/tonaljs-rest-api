@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import _ from 'lodash';
-import { generateGuitarChord } from '../scripts/generateChord';
 import { ChordType, Chord } from '@tonaljs/tonal';
 import { getVoicingsFromChord } from '@martijnmichel/chordshape';
-import { generate } from '../scripts/generate';
+import { generateVoicing } from '../scripts/voicing.generate';
+import { generateChord } from '../scripts/chord.generate';
 import sharp from 'sharp';
 
 const router = Router();
@@ -51,7 +51,7 @@ router.get('/:root/:chroma/variants', async (req, res) => {
 });
 
 router.get('/:root/:chroma/interactive', async (req, res) => {
-  const { variant, harmFunc } = req.query;
+  const { variant, harmFunc, frets } = req.query;
 
   const chord = ChordType.all().find(
     (c) => c.chroma === req.params.chroma,
@@ -59,13 +59,15 @@ router.get('/:root/:chroma/interactive', async (req, res) => {
 
   const c = Chord.getChord(chord.aliases[0], req.params.root);
 
-  const data = generate(c, { variant, harmFunc });
+  const data = variant
+    ? generateVoicing(c, { variant, harmFunc })
+    : generateChord(c, { harmFunc, frets });
 
   return res.set('Content-Type', 'text/html').send(data);
 });
 
 router.get('/:root/:chroma/svg', async (req, res) => {
-  const { variant, harmFunc } = req.query;
+  const { variant, harmFunc, frets } = req.query;
 
   const chord = ChordType.all().find(
     (c) => c.chroma === req.params.chroma,
@@ -73,7 +75,9 @@ router.get('/:root/:chroma/svg', async (req, res) => {
 
   const c = Chord.getChord(chord.aliases[0], req.params.root);
 
-  const data = generate(c, { variant, harmFunc });
+  const data = variant
+    ? generateVoicing(c, { variant, harmFunc })
+    : generateChord(c, { harmFunc, frets });
 
   return res.set('Content-Type', 'image/svg').send(data);
 });
@@ -87,7 +91,9 @@ router.get('/:root/:chroma/png', async (req, res) => {
 
   const c = Chord.getChord(chord.aliases[0], req.params.root);
 
-  const data = generate(c, { variant, harmFunc });
+  const data = variant
+    ? generateVoicing(c, { variant, harmFunc })
+    : undefined;
 
   const imageData = await sharp(Buffer.from(data))
     .resize(parseInt(width) || 246)

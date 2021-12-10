@@ -5,7 +5,6 @@ import express from 'express';
 
 import models from './models';
 import routes from './routes';
-import { generate } from './scripts/generate';
 
 const app = express();
 
