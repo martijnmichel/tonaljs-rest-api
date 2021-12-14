@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
 router.get('/:root/:chordAlias', (req, res) => {
   const chord = Chord.getChord(
     req.params.chordAlias,
-    req.params.root,
+    decodeURI(req.params.root),
   );
 
   const host = `${req.protocol}://${req.get('host')}/chord`;
@@ -42,8 +42,8 @@ router.get('/:root/:chroma/variants', async (req, res) => {
       return {
         ...v,
         url: {
-          png: `${host}/${req.params.root}/${chord.chroma}/png?variant=${i}`,
-          interactive: `${host}/${req.params.root}/${chord.chroma}/interactive?variant=${i}`,
+          png: `${host}/${decodeURI(req.params.root)}/${chord.chroma}/png?variant=${i}`,
+          interactive: `${host}/${decodeURI(req.params.root)}/${chord.chroma}/interactive?variant=${i}`,
         },
       };
     }),
@@ -57,7 +57,7 @@ router.get('/:root/:chroma/interactive', async (req, res) => {
     (c) => c.chroma === req.params.chroma,
   );
 
-  const c = Chord.getChord(chord.aliases[0], req.params.root);
+  const c = Chord.getChord(chord.aliases[0], decodeURI(req.params.root));
 
   const data = variant
     ? generateVoicing(c, { variant, harmFunc })
