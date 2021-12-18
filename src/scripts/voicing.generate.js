@@ -24,6 +24,7 @@ function generateVoicing(c, opts) {
 
   const voicings = getVoicingsFromChord(chord.aliases[0]);
 
+
   const translated = translate(voicings[options.variant], c.tonic);
 
   const voicing = translated.shape
@@ -92,7 +93,6 @@ function generateVoicing(c, opts) {
   function addNotes() {
     const translatedFrets = translated.translated.reverse();
 
-  console.log(voicing)
     voicing.forEach((item, index) => {
 
       

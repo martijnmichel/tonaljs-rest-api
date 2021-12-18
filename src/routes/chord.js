@@ -6,112 +6,105 @@ import { generateVoicing } from '../scripts/voicing.generate';
 import { generateChord } from '../scripts/chord.generate';
 import sharp from 'sharp';
 
+const encoded = (req, root, alias) =>
+  `${req.context.url}/chord/${encodeURIComponent(
+    root,
+  )}/${encodeURIComponent(alias)}`;
+
 const router = Router();
 
 router.get('/', (req, res) => {
   return res.send(Object.values(req.context.models.chords));
 });
 
-router.get('/:root/:chordAlias', (req, res) => {
-  const chord = Chord.getChord(
-    decodeURI(req.params.chordAlias),
-    decodeURI(req.params.root),
-  );
 
-  const host = `${req.protocol}://${req.get('host')}/chord`;
-
-  return res.send({
-    ...chord,
-    url: {
-      variants: `${host}/${req.params.root}/${chord.chroma}/variants`,
-      interactive: `${host}/${req.params.root}/${chord.chroma}/interactive?variant=0`,
-    },
-  });
-});
-
-router.get('/:root/:chroma/variants', async (req, res) => {
-  const chord = ChordType.all().find(
-    (c) => c.chroma === req.params.chroma,
-  );
-
-  const host = `${req.protocol}://${req.get('host')}/chord`;
-
-  const data = getVoicingsFromChord(chord.aliases[0]);
-  return res.send(
-    data.map((v, i) => {
-      return {
-        ...v,
-        url: {
-          png: `${host}/${decodeURI(req.params.root)}/${chord.chroma}/png?variant=${i}`,
-          interactive: `${host}/${decodeURI(req.params.root)}/${chord.chroma}/interactive?variant=${i}`,
-        },
-      };
-    }),
-  );
-});
-
-router.get('/:root/:chroma/interactive', async (req, res) => {
-  const { variant, harmFunc, frets } = req.query;
-
-  const chord = ChordType.all().find(
-    (c) => c.chroma === req.params.chroma,
-  );
-
-  const c = Chord.getChord(chord.aliases[0], decodeURI(req.params.root));
-
-  const data = variant
-    ? generateVoicing(c, { variant, harmFunc })
-    : generateChord(c, { harmFunc, frets });
-
-  return res.set('Content-Type', 'text/html').send(data);
-});
-
-router.get('/:root/:chroma/svg', async (req, res) => {
-  const { variant, harmFunc, frets } = req.query;
-
-  const chord = ChordType.all().find(
-    (c) => c.chroma === req.params.chroma,
-  );
-
-  const c = Chord.getChord(chord.aliases[0], req.params.root);
-
-  const data = variant
-    ? generateVoicing(c, { variant, harmFunc })
-    : generateChord(c, { harmFunc, frets });
-
-  return res.set('Content-Type', 'image/svg').send(data);
-});
-
-router.get('/:root/:chroma/png', async (req, res) => {
-  const { variant, width, harmFunc } = req.query;
-
-  const chord = ChordType.all().find(
-    (c) => c.chroma === req.params.chroma,
-  );
-
-  const c = Chord.getChord(chord.aliases[0], req.params.root);
-
-  const data = variant
-    ? generateVoicing(c, { variant, harmFunc })
-    : undefined;
-
-  const imageData = await sharp(Buffer.from(data))
-    .resize(parseInt(width) || 246)
-    .png()
-    .toBuffer()
-    .then((re) => re);
-
-  return res.set('Content-Type', 'image/png').send(imageData);
-});
-
-router.get('/:chordAlias', (req, res) => {
-  let chord = _.find(req.context.models.chords, (c) =>
-    c.aliases.includes(req.params.chordAlias),
-  );
+router.get('/:alias', (req, res) => {
+  let chord = Chord.getChord(req.params.alias)
   if (chord) return res.send(chord);
   else
     return res.send({
       empty: true,
     });
 });
+
+router.get('/:root/:alias', (req, res) => {
+  const { root, alias } = req.params;
+
+  const chord = Chord.getChord(alias, root);
+
+  return res.send({
+    chord,
+    
+  });
+});
+
+router.get('/:root/:alias/voicings', (req, res) => {
+  const { root, alias } = req.params;
+
+  const voicings = getVoicingsFromChord(alias);
+
+  return res.send({
+    voicings,
+    images: {
+      interactive: voicings.map(
+        (v, i) =>
+          `${encoded(req, root, alias)}/interactive?variant=${i}`,
+      ),
+      svg: voicings.map(
+        (v, i) => `${encoded(req, root, alias)}/svg?variant=${i}`,
+      ),
+      png: voicings.map(
+        (v, i) => `${encoded(req, root, alias)}/png?variant=${i}`,
+      ),
+      webp: voicings.map(
+        (v, i) => `${encoded(req, root, alias)}/webp?variant=${i}`,
+      ),
+    },
+    
+  });
+});
+
+
+
+router.get('/:root/:alias/voicing/:imageType', async (req, res) => {
+  const { variant, harmFunc, frets, width } = req.query;
+
+  const { root, alias, imageType } = req.params;
+
+  const chord = Chord.getChord(alias, root);
+
+  const data = variant
+    ? generateVoicing(chord, { variant, harmFunc })
+    : generateChord(chord, { harmFunc, frets });
+
+  switch(imageType) {
+    case 'interactive':
+      return res.set('Content-Type', 'text/html').send(data);
+    case 'svg':
+      return res.set('Content-Type', 'image/svg').send(data);
+    case 'png': {
+      const imageData = await sharp(Buffer.from(data))
+        .resize(parseInt(width || 246))
+        .png()
+        .toBuffer()
+        .then((re) => re);
+
+      return res.set('Content-Type', 'image/png').send(imageData);
+    }
+    case 'webp': {
+      const imageData = await sharp(Buffer.from(data))
+        .resize(parseInt(width || 246))
+        .webp()
+        .toBuffer()
+        .then((re) => re);
+
+      return res.set('Content-Type', 'image/webp').send(imageData);
+    }
+    default:
+      return res.set('Content-Type', 'text/html').send(data);
+  }
+
+});
+
+
 export default router;

@@ -9,7 +9,7 @@ export default function useJSDom() {
               <body>
                   <svg viewBox="0 0 246.324 361.625" width="246.324" height="361.625" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:bx="https://boxy-svg.com">
                       <defs>
-                          <style bx:fonts="Roboto" bx:pinned="true">@import url(https://fonts.googleapis.com/css2?family=Roboto%3Aital%2Cwght%400%2C100%3B0%2C300%3B0%2C400%3B0%2C500%3B0%2C700%3B0%2C900%3B1%2C100%3B1%2C300%3B1%2C400%3B1%2C500%3B1%2C700%3B1%2C900&display=swap)</style>
+                          <style bx:fonts="Roboto" bx:pinned="true">@import url(https://fonts.googleapis.com/css2?family=Roboto%3Aital%2Cwght%400%2C100%3B0%2C300%3B0%2C400%3B0%2C500%3B0%2C700%3B0%2C900%3B1%2C100%3B1%2C300%3B1%2C400%3B1%2C500%3B1%2C700%3B1%2C900)</style>
                           
                           <linearGradient id="gradient-1" bx:pinned="true">
                           <stop offset="0" style="stop-color: rgb(223, 223, 223);"></stop>

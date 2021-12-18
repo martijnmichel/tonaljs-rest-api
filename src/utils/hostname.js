@@ -1,0 +1,1 @@
+export const host = (req) => `${req.protocol}://${req.get('host')}`;
