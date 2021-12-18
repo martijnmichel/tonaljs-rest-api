@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
 
 router.get('/:root/:chordAlias', (req, res) => {
   const chord = Chord.getChord(
-    req.params.chordAlias,
+    decodeURI(req.params.chordAlias),
     decodeURI(req.params.root),
   );
 

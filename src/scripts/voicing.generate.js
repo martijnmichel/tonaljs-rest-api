@@ -91,7 +91,13 @@ function generateVoicing(c, opts) {
 
   function addNotes() {
     const translatedFrets = translated.translated.reverse();
+
+  console.log(voicing)
     voicing.forEach((item, index) => {
+
+      
+
+      
       if (item[1] === 'x') return false;
       const string = find(strings, (s) => s.index === item[0]);
       const stringEl = document.getElementById(string.name);
