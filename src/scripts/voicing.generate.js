@@ -8,7 +8,7 @@ const { orderBy, find } = require('lodash');
 import useJSDom from '../composables/jsdom';
 
 const options = {
-  variant: 0,
+  voicing: 0,
   harmFunc: false,
 };
 
@@ -25,7 +25,7 @@ function generateVoicing(c, opts) {
   const voicings = getVoicingsFromChord(chord.aliases[0]);
 
 
-  const translated = translate(voicings[options.variant], c.tonic);
+  const translated = translate(voicings[options.voicing], c.tonic);
 
   const voicing = translated.shape
     .slice()

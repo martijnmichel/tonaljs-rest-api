@@ -32,18 +32,10 @@ router.get('/:root/:alias', (req, res) => {
 
   const chord = Chord.getChord(alias, root);
 
-  return res.send({
-    chord,
-    
-  });
-});
-
-router.get('/:root/:alias/voicings', (req, res) => {
-  const { root, alias } = req.params;
-
   const voicings = getVoicingsFromChord(alias);
 
   return res.send({
+    chord,
     voicings,
     images: {
       interactive: voicings.map(
@@ -60,21 +52,19 @@ router.get('/:root/:alias/voicings', (req, res) => {
         (v, i) => `${encoded(req, root, alias)}/webp?variant=${i}`,
       ),
     },
-    
   });
 });
 
 
-
-router.get('/:root/:alias/voicing/:imageType', async (req, res) => {
-  const { variant, harmFunc, frets, width } = req.query;
+router.get('/:root/:alias/:imageType', async (req, res) => {
+  const { voicing, harmFunc, frets, width } = req.query;
 
   const { root, alias, imageType } = req.params;
 
   const chord = Chord.getChord(alias, root);
 
-  const data = variant
-    ? generateVoicing(chord, { variant, harmFunc })
+  const data = voicing
+    ? generateVoicing(chord, { voicing, harmFunc })
     : generateChord(chord, { harmFunc, frets });
 
   switch(imageType) {
