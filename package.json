@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "post-install": "node node_modules/puppeteer/install.js",
     "start": "nodemon --exec babel-node src/index.js",
     "test": ""
   },
@@ -22,14 +23,17 @@
     "@tonaljs/modules": "3.4.5",
     "@tonaljs/tonal": "^4.6.5",
     "@vercel/node": "^1.12.1",
-    "body-parser": "^1.18.3",
+    "body-parser": "^1.20.0",
     "cors": "^2.8.5",
     "dotenv": "^6.2.0",
-    "express": "^4.16.4",
+    "express": "^4.18.1",
     "jsdom": "^19.0.0",
     "lodash": "^4.17.21",
-    "sharp": "^0.29.3",
+    "puppeteer": "^18.2.0",
+    "sharp": "^0.31.1",
     "svgdom": "^0.1.10",
-    "uuid": "^3.3.2"
+    "tone": "^14.7.77",
+    "uuid": "^9.0.0",
+    "web-audio-api": "^0.2.2"
   }
 }

@@ -4,6 +4,7 @@ import { ChordType, Chord } from '@tonaljs/tonal';
 import { getVoicingsFromChord } from '@martijnmichel/chordshape';
 import { generateVoicing } from '../scripts/voicing.generate';
 import { generateChord } from '../scripts/chord.generate';
+import { generateAudio } from '../scripts/generateAudio';
 import sharp from 'sharp';
 
 const encoded = (req, root, alias) =>
@@ -17,9 +18,8 @@ router.get('/', (req, res) => {
   return res.send(Object.values(req.context.models.chords));
 });
 
-
 router.get('/:alias', (req, res) => {
-  let chord = Chord.getChord(req.params.alias)
+  let chord = Chord.getChord(req.params.alias);
   if (chord) return res.send(chord);
   else
     return res.send({
@@ -55,6 +55,16 @@ router.get('/:root/:alias', (req, res) => {
   });
 });
 
+router.get('/mp3/:root/:alias', async (req, res) => {
+  const { root, alias } = req.params;
+
+  const { notes } = Chord.getChord(alias, root);
+  console.log(notes);
+
+  const data = await generateAudio(notes);
+
+  return res.set('Content-Type', 'audio/webm;codecs=opus').send(data);
+});
 
 router.get('/:root/:alias/:imageType', async (req, res) => {
   const { voicing, harmFunc, frets, width } = req.query;
@@ -67,7 +77,7 @@ router.get('/:root/:alias/:imageType', async (req, res) => {
     ? generateVoicing(chord, { voicing, harmFunc })
     : generateChord(chord, { harmFunc, frets });
 
-  switch(imageType) {
+  switch (imageType) {
     case 'interactive':
       return res.set('Content-Type', 'text/html').send(data);
     case 'svg':
@@ -93,8 +103,6 @@ router.get('/:root/:alias/:imageType', async (req, res) => {
     default:
       return res.set('Content-Type', 'text/html').send(data);
   }
-
 });
-
 
 export default router;
