@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer';
 import * as Tone from 'tone';
 import fs from 'fs';
 import { Chord, ChordDictionary, Scale } from '@tonaljs/tonal';
+import { resolve } from 'path';
 function strToBuffer(str) {
   // Convert a UTF-8 String to an ArrayBuffer
   let buf = new ArrayBuffer(str.length); // 1 byte for each char
@@ -13,7 +14,7 @@ function strToBuffer(str) {
   return Buffer.from(buf);
 }
 
-export const getAudioBuffer = async ({ notes, timing }) => {
+export const getAudioBuffer = async ({ notes }) => {
   const browser = await puppeteer.launch({
     headless: false,
     args: [
@@ -28,8 +29,6 @@ export const getAudioBuffer = async ({ notes, timing }) => {
   await page.addScriptTag({
     url: 'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.48/Tone.js',
   });
-
-  await page.exposeFunction('timing', timing);
 
   const re = await page.evaluate(
     async ({ notes }) => {
@@ -102,6 +101,8 @@ export const getAudioBuffer = async ({ notes, timing }) => {
     { notes },
   );
 
+  await page.close();
+
   await browser.close();
 
   const buffer = strToBuffer(re);
@@ -126,12 +127,19 @@ const saveToDisk = async ({ notes, name }) => {
   });
 };
 
-const chords = ChordDictionary.all();
+const generateChords = async () => {
+  const chords = ChordDictionary.all();
 
-chords.forEach(async (chord) => {
-  const { notes, name } = Chord.getChord(chord, 'C3');
+  for (let x = 0; x < chords.length; x++) {
+    const chord = chords[x];
+    const { notes, name } = Chord.getChord(chord.name, 'C3');
 
-  await saveToDisk({ notes, name });
+    console.log(`Generating chord: ${name} -> ${notes}`);
 
-  console.log('saved all chords');
-});
+    await saveToDisk({ notes, name });
+  }
+
+  console.log('chords saved');
+};
+
+generateChords();
