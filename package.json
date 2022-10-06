@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "post-install": "node node_modules/puppeteer/install.js",
-    "start": "nodemon --exec babel-node src/index.js",
-    "test": ""
+    "build": "npx tsc",
+    "start": "node dist/index.js",
+    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\""
   },
   "keywords": [],
   "author": "",
@@ -15,7 +17,9 @@
     "@babel/core": "^7.2.2",
     "@babel/node": "^7.2.2",
     "@babel/preset-env": "^7.2.3",
-    "nodemon": "^2.0.15"
+    "@types/express": "^4.17.14",
+    "@types/node": "^18.8.2",
+    "nodemon": "^2.0.20"
   },
   "dependencies": {
     "@martijnmichel/chordshape": "./chordshape-0.0.28-npm.tgz",
@@ -24,6 +28,7 @@
     "@tonaljs/tonal": "^4.6.5",
     "@vercel/node": "^1.12.1",
     "body-parser": "^1.20.0",
+    "concurrently": "^7.4.0",
     "cors": "^2.8.5",
     "dotenv": "^6.2.0",
     "express": "^4.18.1",
@@ -33,6 +38,7 @@
     "sharp": "^0.31.1",
     "svgdom": "^0.1.10",
     "tone": "^14.7.77",
+    "typescript": "^4.8.4",
     "uuid": "^9.0.0",
     "web-audio-api": "^0.2.2"
   }

@@ -18,7 +18,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   req.context = {
     models,
-    url: `${req.protocol}://${req.get('host')}`
+    url: `${req.protocol}://${req.get('host')}`,
   };
   next();
 });
