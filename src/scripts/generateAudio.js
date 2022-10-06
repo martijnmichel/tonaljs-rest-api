@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import * as Tone from 'tone';
 import fs from 'fs';
+import { Chord, ChordDictionary, Scale } from '@tonaljs/tonal';
 function strToBuffer(str) {
   // Convert a UTF-8 String to an ArrayBuffer
   let buf = new ArrayBuffer(str.length); // 1 byte for each char
@@ -12,9 +13,9 @@ function strToBuffer(str) {
   return Buffer.from(buf);
 }
 
-export const generateAudio = async (notes) => {
+export const getAudioBuffer = async ({ notes, timing }) => {
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     args: [
       '--use-fake-ui-for-media-stream',
       '--autoplay-policy=no-user-gesture-required',
@@ -28,10 +29,27 @@ export const generateAudio = async (notes) => {
     url: 'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.48/Tone.js',
   });
 
+  await page.exposeFunction('timing', timing);
+
   const re = await page.evaluate(
     async ({ notes }) => {
       const recorder = new Tone.Recorder();
-      const synth = new Tone.Synth().connect(recorder);
+      const sampler = new Tone.Sampler({
+        urls: {
+          C2: 'C2.mp3',
+          C3: 'C3.mp3',
+          C4: 'C4.mp3',
+          C5: 'C5.mp3',
+          C6: 'C6.mp3',
+        },
+        baseUrl: 'https://tocadovision.nl/audio/index.php?note=',
+        onerror: (e) => {
+          console.log(e);
+        },
+        onload: () => {
+          console.log('samples loaded');
+        },
+      }).connect(recorder);
 
       function arrayBufferToString(buffer) {
         // Convert an ArrayBuffer to an UTF-8 String
@@ -54,11 +72,24 @@ export const generateAudio = async (notes) => {
 
       const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
+      const waitForLoaded = () =>
+        new Promise((resolve, reject) => {
+          const interval = setInterval(() => {
+            if (sampler.loaded) {
+              resolve();
+              clearInterval(interval);
+            }
+          }, 250);
+        });
+
+      await waitForLoaded();
+
       // start recording
       recorder.start();
+
       // generate a few notes
       notes.forEach((note, i) => {
-        synth.triggerAttackRelease(note, 0.5, i / 2);
+        sampler.triggerAttackRelease(note, 1, (i + 1) / 2);
       });
       // wait for the notes to end and stop the recording
       await delay(notes.length * 1000);
@@ -77,11 +108,30 @@ export const generateAudio = async (notes) => {
 
   console.log(buffer);
 
-  fs.writeFile('audio.webm', buffer, () =>
-    console.log('video saved!'),
-  );
-
   return buffer;
 };
 
-generateAudio(['C3', 'G3', 'E4', 'G4', 'D5']);
+const saveToDisk = async ({ notes, name }) => {
+  const buffer = await getAudioBuffer({
+    notes,
+  });
+
+  await new Promise((resolve) => {
+    fs.writeFile(
+      name + '.webm',
+      buffer,
+      () => console.log(' saved!'),
+      resolve(),
+    );
+  });
+};
+
+const chords = ChordDictionary.all();
+
+chords.forEach(async (chord) => {
+  const { notes, name } = Chord.getChord(chord, 'C3');
+
+  await saveToDisk({ notes, name });
+
+  console.log('saved all chords');
+});
