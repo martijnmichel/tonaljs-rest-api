@@ -3,7 +3,9 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import express from 'express';
 
+// @ts-ignore
 import models from './models';
+// @ts-ignore
 import routes from './routes';
 
 const app = express();

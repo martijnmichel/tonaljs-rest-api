@@ -2,7 +2,11 @@ import puppeteer from 'puppeteer';
 import * as Tone from 'tone';
 import fs from 'fs';
 import { Chord, ChordDictionary, Scale } from '@tonaljs/tonal';
-import { resolve } from 'path';
+
+import inquirer from 'inquirer';
+import _ from 'lodash';
+import { notes } from '../models/notes.js';
+
 function strToBuffer(str) {
   // Convert a UTF-8 String to an ArrayBuffer
   let buf = new ArrayBuffer(str.length); // 1 byte for each char
@@ -29,6 +33,8 @@ export const getAudioBuffer = async ({ notes }) => {
   await page.addScriptTag({
     url: 'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.48/Tone.js',
   });
+
+  await page.waitForFunction('window.Tone !== undefined');
 
   const re = await page.evaluate(
     async ({ notes }) => {
@@ -117,29 +123,65 @@ const saveToDisk = async ({ notes, name }) => {
     notes,
   });
 
-  await new Promise((resolve) => {
+  await new Promise((resolve, reject) => {
     fs.writeFile(
-      name + '.webm',
+      '../../dist/audio/piano/chords/' + name + '.webm',
       buffer,
-      () => console.log(' saved!'),
-      resolve(),
+      (err) => {
+        if (err) {
+          console.log(err);
+          resolve(false);
+        } else {
+          console.log(name + ' saved!');
+          resolve(true);
+        }
+      },
     );
   });
 };
 
-const generateChords = async () => {
-  const chords = ChordDictionary.all();
+const generateChords = async (chords, notes) => {
+  for (let y = 0; y < notes.length; y++) {
+    const root = notes[y];
 
-  for (let x = 0; x < chords.length; x++) {
-    const chord = chords[x];
-    const { notes, name } = Chord.getChord(chord.name, 'C3');
+    for (let x = 0; x < chords.length; x++) {
+      const chord = chords[x];
+      const { notes, name, aliases } = Chord.getChord(
+        chord,
+        `${root}3`,
+      );
 
-    console.log(`Generating chord: ${name} -> ${notes}`);
+      const chordName = `${name} ${aliases[0]}`;
 
-    await saveToDisk({ notes, name });
+      console.log(`Generating chord: ${chordName} -> ${notes}`);
+
+      await saveToDisk({ notes, name: chordName });
+    }
   }
 
   console.log('chords saved');
 };
 
-generateChords();
+inquirer
+  .prompt([
+    {
+      type: 'checkbox',
+      message: 'Select Chords',
+      name: 'chords',
+      choices: _.map(ChordDictionary.all(), ({ name, aliases }) => ({
+        name: name || aliases[0],
+      })),
+    },
+
+    {
+      type: 'checkbox',
+      message: 'Select Notes',
+      name: 'notes',
+      choices: notes,
+    },
+  ])
+  .then((answers) => {
+    console.log(answers);
+
+    generateChords(answers.chords, answers.notes);
+  });
