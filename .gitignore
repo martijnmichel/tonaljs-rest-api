@@ -2,3 +2,5 @@ logfile
 
 node_modules/
 .now
+
+dist/audio

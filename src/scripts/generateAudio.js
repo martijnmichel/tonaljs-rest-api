@@ -6,6 +6,44 @@ import { Chord, ChordDictionary, Scale } from '@tonaljs/tonal';
 import inquirer from 'inquirer';
 import _ from 'lodash';
 import { notes } from '../models/notes.js';
+import sanitize from 'sanitize-filename';
+
+const minimal_args = [
+  '--disable-background-networking',
+  '--disable-background-timer-throttling',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-breakpad',
+  '--disable-client-side-phishing-detection',
+  '--disable-component-update',
+  '--disable-default-apps',
+  '--disable-dev-shm-usage',
+  '--disable-domain-reliability',
+  '--disable-extensions',
+  '--disable-features=AudioServiceOutOfProcess',
+  '--disable-hang-monitor',
+  '--disable-ipc-flooding-protection',
+  '--disable-notifications',
+  '--disable-offer-store-unmasked-wallet-cards',
+  '--disable-popup-blocking',
+  '--disable-print-preview',
+  '--disable-prompt-on-repost',
+  '--disable-renderer-backgrounding',
+  '--disable-setuid-sandbox',
+  '--disable-speech-api',
+  '--disable-sync',
+  '--hide-scrollbars',
+  '--ignore-gpu-blacklist',
+  '--metrics-recording-only',
+
+  '--no-default-browser-check',
+  '--no-first-run',
+  '--no-pings',
+  '--no-sandbox',
+  '--no-zygote',
+  '--password-store=basic',
+  '--use-gl=swiftshader',
+  '--use-mock-keychain',
+];
 
 function strToBuffer(str) {
   // Convert a UTF-8 String to an ArrayBuffer
@@ -18,10 +56,14 @@ function strToBuffer(str) {
   return Buffer.from(buf);
 }
 
-export const getAudioBuffer = async ({ notes }) => {
+export const getAudioBuffer = async ({
+  notes,
+  type = 'harmonic',
+}) => {
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     args: [
+      ...minimal_args,
       '--use-fake-ui-for-media-stream',
       '--autoplay-policy=no-user-gesture-required',
     ],
@@ -37,8 +79,7 @@ export const getAudioBuffer = async ({ notes }) => {
   await page.waitForFunction('window.Tone !== undefined');
 
   const re = await page.evaluate(
-    async ({ notes }) => {
-      const recorder = new Tone.Recorder();
+    async ({ notes, type }) => {
       const sampler = new Tone.Sampler({
         urls: {
           C2: 'C2.mp3',
@@ -54,7 +95,7 @@ export const getAudioBuffer = async ({ notes }) => {
         onload: () => {
           console.log('samples loaded');
         },
-      }).connect(recorder);
+      });
 
       function arrayBufferToString(buffer) {
         // Convert an ArrayBuffer to an UTF-8 String
@@ -89,13 +130,42 @@ export const getAudioBuffer = async ({ notes }) => {
 
       await waitForLoaded();
 
+      const recorder = new Tone.Recorder();
+      sampler.connect(recorder);
+
       // start recording
       recorder.start();
 
-      // generate a few notes
-      notes.forEach((note, i) => {
-        sampler.triggerAttackRelease(note, 1, (i + 1) / 2);
-      });
+      if (type === 'harmonic') {
+        const chordEvent = new Tone.ToneEvent((time, chord) => {
+          // the chord as well as the exact time of the event
+          // are passed in as arguments to the callback function
+          sampler.triggerAttackRelease(chord, 2, time);
+        }, notes);
+        // start the chord at the beginning of the transport timeline
+        chordEvent.start();
+      } else {
+        new Tone.Part(
+          function (time, value) {
+            //the value is an object which contains both the note and the velocity
+            sampler.triggerAttackRelease(
+              value.note,
+              '4n',
+              time,
+              value.velocity,
+            );
+          },
+
+          notes.map((note, i) => ({
+            time: `0:${i}`,
+            note,
+            velocity: 0.9,
+          })),
+        ).start(1);
+      }
+
+      Tone.Transport.start();
+
       // wait for the notes to end and stop the recording
       await delay(notes.length * 1000);
       const recording = await recorder.stop();
@@ -104,7 +174,7 @@ export const getAudioBuffer = async ({ notes }) => {
 
       return arrayBufferToString(buffer);
     },
-    { notes },
+    { notes, type },
   );
 
   await page.close();
@@ -113,34 +183,30 @@ export const getAudioBuffer = async ({ notes }) => {
 
   const buffer = strToBuffer(re);
 
-  console.log(buffer);
-
   return buffer;
 };
 
-const saveToDisk = async ({ notes, name }) => {
-  const buffer = await getAudioBuffer({
-    notes,
-  });
+const dir = '../../dist/audio/piano/chords';
 
+const saveToDisk = async ({ buffer, path }) => {
   await new Promise((resolve, reject) => {
-    fs.writeFile(
-      '../../dist/audio/piano/chords/' + name + '.webm',
-      buffer,
-      (err) => {
-        if (err) {
-          console.log(err);
-          resolve(false);
-        } else {
-          console.log(name + ' saved!');
-          resolve(true);
-        }
-      },
-    );
+    fs.writeFile(path, buffer, (err) => {
+      if (err) {
+        console.log(err);
+        resolve(false);
+      } else {
+        console.log('Saved!');
+        resolve(true);
+      }
+    });
   });
 };
 
-const generateChords = async (chords, notes) => {
+const generateChords = async (
+  chords,
+  notes,
+  { overwriteExisting, type } = {},
+) => {
   for (let y = 0; y < notes.length; y++) {
     const root = notes[y];
 
@@ -153,35 +219,88 @@ const generateChords = async (chords, notes) => {
 
       const chordName = `${name} ${aliases[0]}`;
 
-      console.log(`Generating chord: ${chordName} -> ${notes}`);
+      const dir = `../../dist/audio/piano/chords/${type}/${root}/`;
 
-      await saveToDisk({ notes, name: chordName });
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      const path = `${dir}/${sanitize(chordName)}.webm`;
+
+      if (!fs.existsSync(path) || overwriteExisting) {
+        console.log(`Generating chord: ${chordName} -> ${notes}`);
+
+        const buffer = await getAudioBuffer({
+          notes,
+          type,
+        });
+
+        await saveToDisk({
+          path,
+          buffer,
+        });
+      } else {
+        console.log(`Using existing chord: ${chordName} -> ${notes}`);
+      }
     }
   }
 
-  console.log('chords saved');
+  console.log('Chords saved! :)');
 };
 
-inquirer
-  .prompt([
+const cli = async () => {
+  const { generate } = await inquirer.prompt([
     {
-      type: 'checkbox',
-      message: 'Select Chords',
-      name: 'chords',
-      choices: _.map(ChordDictionary.all(), ({ name, aliases }) => ({
-        name: name || aliases[0],
-      })),
+      type: 'list',
+      name: 'generate',
+      message: 'What do you want to do?',
+      choices: ['chords', 'scales', 'intervals'],
     },
+  ]);
 
-    {
-      type: 'checkbox',
-      message: 'Select Notes',
-      name: 'notes',
-      choices: notes,
-    },
-  ])
-  .then((answers) => {
-    console.log(answers);
+  console.log(generate);
 
-    generateChords(answers.chords, answers.notes);
-  });
+  if (generate === 'chords') {
+    const answers = await inquirer.prompt([
+      {
+        type: 'checkbox',
+        message: 'Select Chords',
+        name: 'chords',
+        choices: _.map(
+          ChordDictionary.all(),
+          ({ name, aliases }) => ({
+            name: name || aliases[0],
+          }),
+        ),
+      },
+
+      {
+        type: 'checkbox',
+        message: 'Select Notes',
+        name: 'notes',
+        choices: notes,
+      },
+
+      {
+        type: 'list',
+        name: 'type',
+        message: 'Play the notes harmonically or melodically?',
+        choices: ['harmonic', 'melodic'],
+      },
+
+      {
+        type: 'list',
+        name: 'overwriteExisting',
+        message: 'Overwrite existing?',
+        choices: ['Yes', 'No'],
+      },
+    ]);
+
+    generateChords(answers.chords, answers.notes, {
+      type: answers.type,
+      overwriteExisting: answers.overwriteExisting === 'Yes',
+    });
+  }
+};
+
+cli();
