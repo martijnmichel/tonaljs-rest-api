@@ -227,7 +227,11 @@ const generateChords = async (
 
       const path = `${dir}/${sanitize(chordName)}.webm`;
 
-      if (!fs.existsSync(path) || overwriteExisting) {
+      const fileExists = fs.existsSync(path);
+
+      const { size } = fs.statSync(path);
+
+      if (!fileExists || size < 1024 || overwriteExisting) {
         console.log(`Generating chord: ${chordName} -> ${notes}`);
 
         const buffer = await getAudioBuffer({
@@ -240,7 +244,7 @@ const generateChords = async (
           buffer,
         });
       } else {
-        console.log(`Using existing chord: ${chordName} -> ${notes}`);
+        console.log(`Using existing chord: ${chordName} -> ${size}`);
       }
     }
   }
